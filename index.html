@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Leela Cafe | Order Online</title>
+<meta name="theme-color" content="#176b43">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--green:#176b43;--dark:#123b2a;--mint:#eaf5ee;--ink:#17251d;--muted:#66756c;--line:#dce8df;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:#f6faf7;color:var(--ink);font:15px/1.45 Arial,sans-serif}
+header{background:linear-gradient(120deg,#0e422b,#1b754b);color:white;padding:22px max(18px,calc((100% - 1100px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-size:25px;font-weight:800;letter-spacing:.4px}.tag{font-size:12px;opacity:.85;letter-spacing:2px}
+header button{background:#fff;color:var(--green);border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+main{max-width:1100px;margin:24px auto;padding:0 16px}.hero{background:white;border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:18px}
+h1,h2,h3,p{margin-top:0}h1{font-size:28px;margin-bottom:6px}.muted{color:var(--muted)}.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px}
+.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #cad9ce;border-radius:9px;font:inherit;background:white;margin:5px 0 10px}
+button{cursor:pointer}.btn{border:0;border-radius:10px;background:var(--green);color:white;padding:11px 15px;font-weight:700}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.alt{background:var(--mint);color:var(--dark);border:1px solid var(--line)}.btn.danger{background:#a62c2c}
+.categories{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}.categories button{border:1px solid var(--line);background:white;border-radius:20px;padding:8px 12px}.categories button.active{background:var(--green);color:white}
+.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.item{border:1px solid var(--line);border-radius:13px;padding:14px;background:white;display:flex;justify-content:space-between;gap:10px;align-items:center}.item h3{font-size:15px;margin:0 0 5px}.price{font-weight:800;color:var(--green)}.item button{flex-shrink:0}
+.cart-line{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:9px 0}.qty button{border:1px solid var(--line);background:#f6faf7;border-radius:6px;padding:2px 8px}
+.total{display:flex;justify-content:space-between;padding:5px 0}.total.grand{font-size:19px;font-weight:800;border-top:1px solid var(--line);margin-top:8px;padding-top:12px}
+.notice{padding:11px 13px;background:var(--mint);border-radius:10px;color:var(--dark);font-size:13px;margin:10px 0}.hidden{display:none!important}.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.order{border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}.order-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.pill{font-size:12px;background:var(--mint);color:var(--dark);padding:4px 8px;border-radius:20px}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid var(--line);padding:9px 6px;font-size:14px}
+footer{text-align:center;color:var(--muted);padding:24px;font-size:12px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.menu-grid{grid-template-columns:1fr}header{padding:18px}.brand{font-size:20px}}
+@media print{body{background:white}.no-print,header,footer{display:none!important}#receipt{display:block!important}.receipt{width:58mm;font:12px monospace;color:#000}.receipt h2{text-align:center;font-size:16px}.receipt p{margin:3px 0}.receipt table{font:11px monospace}.receipt td,.receipt th{padding:3px 0}.receipt .r{text-align:right}}
+</style>
+</head>
+<body>
+<header><div><div class="brand">THE LEELA CAFE</div><div class="tag">TASTE. CHILL. REPEAT.</div></div><button id="adminOpen" class="no-print">Admin Login</button></header>
+<main>
+<section id="customerView">
+<div class="hero"><h1>Order your favourites</h1><p class="muted">Freshly prepared. Delivered with care.</p><div class="notice">Home delivery: Free on orders ₹300 or more. Below ₹300: ₹50 delivery fee. Takeaway: Free.</div></div>
+<div class="layout">
+<section class="panel"><input id="search" placeholder="Search menu..." aria-label="Search menu"><div id="categories" class="categories"></div><div id="menu" class="menu-grid"><p class="muted">Loading menu…</p></div></section>
+<aside class="panel"><h2>Your Cart</h2><div id="cart"><p class="muted">Your cart is empty.</p></div>
+<div id="checkout" class="hidden"><h3 style="margin-top:16px">Checkout</h3>
+<label>Your name<input id="custName" autocomplete="name" required></label>
+<label>Mobile number<input id="custPhone" inputmode="tel" autocomplete="tel" required></label>
+<label>Order type<select id="orderType"><option value="delivery">Home Delivery</option><option value="takeaway">Takeaway</option></select></label>
+<label id="addressWrap">Delivery address<textarea id="custAddress" rows="2" placeholder="House / area / landmark"></textarea></label>
+<label>Payment<select id="payment"><option value="cash">Cash (pay on delivery / at cafe)</option></select></label>
+<div class="notice">UPI payment will be enabled after the cafe adds its QR code.</div>
+<button id="placeOrder" class="btn" style="width:100%">Place Order</button><p id="checkoutMsg" class="muted"></p>
+</div></aside></div></section>
+
+<section id="adminView" class="hidden">
+<div class="hero"><h1>Admin Dashboard</h1><p class="muted">THE LEELA CAFE · Orders and menu management</p><button id="logout" class="btn alt">Sign out</button></div>
+<div id="loginPanel" class="panel"><h2>Admin Login</h2><p class="muted">Use the cafe admin email. The email must be approved in the database first.</p>
+<label>Email<input id="adminEmail" type="email" value="theleelacafe2000@gmail.com"></label><label>Password<input id="adminPassword" type="password" autocomplete="current-password"></label>
+<div class="tabs"><button id="signIn" class="btn">Sign in</button><button id="signUp" class="btn alt">Create admin account</button></div><p id="authMsg" class="muted"></p></div>
+<div id="adminContent" class="hidden">
+<div class="tabs"><button class="btn" data-tab="ordersTab">Live Orders</button><button class="btn alt" data-tab="menuTab">Manage Menu</button></div>
+<section id="ordersTab" class="panel"><h2>Orders <span class="pill" id="liveState">Connecting…</span></h2><div id="orders"><p class="muted">Loading orders…</p></div></section>
+<section id="menuTab" class="panel hidden"><h2>Manage Menu</h2><form id="addItem"><input id="newName" placeholder="Item name" required><input id="newCategory" placeholder="Category"><input id="newPrice" type="number" min="0" step=".01" placeholder="Price ₹" required><button class="btn">Add item</button></form><div style="overflow:auto"><table><thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Available</th><th>Save</th></tr></thead><tbody id="menuAdmin"></tbody></table></div></section>
+</div></section>
+</main>
+<section id="receipt" class="hidden"></section><footer>THE LEELA CAFE · Taste. Chill. Repeat.</footer>
+<script>
+const SUPABASE_URL = "https://idqpcfkgqhexiohgbybk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_GhtX-5Rfk6hSLTzR-6qbKQ_doSRMGEI";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let allItems=[], cart={}, activeCategory="All", currentOrders=[];
+const $=id=>document.getElementById(id), money=n=>"₹"+Number(n||0).toFixed(2);
+function safe(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+async function loadMenu(){const {data,error}=await db.from("menu_items").select("id,name,category,price,available").eq("available",true).order("category").order("name");if(error){$("menu").innerHTML='<p class="muted">Menu could not load. Please refresh or contact the cafe.</p>';return;}allItems=data||[];renderCategories();renderMenu();renderCart();}
+function renderCategories(){const cats=["All",...new Set(allItems.map(x=>x.category||"Other"))];$("categories").innerHTML=cats.map(c=>`<button class="${c===activeCategory?'active':''}" data-cat="${safe(c)}">${safe(c)}</button>`).join("");$("categories").querySelectorAll("button").forEach(b=>b.onclick=()=>{activeCategory=b.dataset.cat;renderCategories();renderMenu();});}
+function renderMenu(){const q=$("search").value.toLowerCase();const rows=allItems.filter(x=>(activeCategory==="All"||(x.category||"Other")===activeCategory)&&x.name.toLowerCase().includes(q));$("menu").innerHTML=rows.length?rows.map(x=>`<article class="item"><div><h3>${safe(x.name)}</h3><div class="price">${money(x.price)}</div></div><button class="btn alt" data-add="${x.id}">Add +</button></article>`).join(""):'<p class="muted">No items found.</p>';$("menu").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{cart[b.dataset.add]=(cart[b.dataset.add]||0)+1;renderCart();});}
+$("search").addEventListener("input",renderMenu);
+function totals(){let subtotal=Object.entries(cart).reduce((s,[id,q])=>s+Number(allItems.find(x=>x.id==id)?.price||0)*q,0);let fee=$("orderType").value==="takeaway"?0:(subtotal>=300?0:50);return{subtotal,fee,total:subtotal+fee};}
+function renderCart(){let rows=Object.entries(cart).filter(([id,q])=>q>0);$("cart").innerHTML=rows.length?rows.map(([id,q])=>{let x=allItems.find(a=>a.id==id);return `<div class="cart-line"><div><b>${safe(x?.name||"Item")}</b><div class="muted">${money(x?.price)} × ${q}</div></div><div class="qty"><button data-dec="${id}">−</button> ${q} <button data-inc="${id}">+</button></div></div>`}).join(""):'<p class="muted">Your cart is empty.</p>';let t=totals();if(rows.length)$("cart").innerHTML+=`<div class="total"><span>Subtotal</span><b>${money(t.subtotal)}</b></div><div class="total"><span>Delivery</span><b>${t.fee?money(t.fee):"Free"}</b></div><div class="total grand"><span>Total</span><b>${money(t.total)}</b></div>`;$("checkout").classList.toggle("hidden",!rows.length);$("cart").querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{cart[b.dataset.dec]--;if(cart[b.dataset.dec]<=0)delete cart[b.dataset.dec];renderCart();});$("cart").querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>{cart[b.dataset.inc]++;renderCart();});}
+$("orderType").onchange=()=>{$("addressWrap").classList.toggle("hidden",$("orderType").value==="takeaway");renderCart();};
+$("placeOrder").onclick=async()=>{const name=$("custName").value.trim(),phone=$("custPhone").value.trim(),type=$("orderType").value,address=$("custAddress").value.trim();if(!name||!phone||(type==="delivery"&&!address)){ $("checkoutMsg").textContent="Please fill name, mobile number and delivery address.";return;}const items=Object.entries(cart).map(([id,quantity])=>({menu_item_id:Number(id),quantity}));$("placeOrder").disabled=true;$("checkoutMsg").textContent="Submitting order…";const {data,error}=await db.rpc("place_order",{p_customer_name:name,p_phone:phone,p_order_type:type,p_address:type==="delivery"?address:null,p_payment_method:"cash",p_items:items});$("placeOrder").disabled=false;if(error){$("checkoutMsg").textContent="Order failed: "+error.message;return;}cart={};renderCart();$("checkoutMsg").textContent="Order received! Your order number is #"+data+".";alert("Thank you! Your order #"+data+" has been received.");};
+$("adminOpen").onclick=()=>{$("customerView").classList.add("hidden");$("adminView").classList.remove("hidden");};
+$("logout").onclick=async()=>{await db.auth.signOut();$("adminContent").classList.add("hidden");$("loginPanel").classList.remove("hidden");};
+async function auth(action){$("authMsg").textContent="Please wait…";const email=$("adminEmail").value.trim(),password=$("adminPassword").value;if(action==="signup"){const {error}=await db.auth.signUp({email,password});$("authMsg").textContent=error?error.message:"Account created. Check your email to confirm, then sign in.";}else{const {error}=await db.auth.signInWithPassword({email,password});$("authMsg").textContent=error?error.message:"Signed in.";if(!error)await initAdmin();}}
+$("signIn").onclick=()=>auth("signin");$("signUp").onclick=()=>auth("signup");
+async function initAdmin(){const {data:{user}}=await db.auth.getUser();if(!user)return;const {data:allowed,error}=await db.from("admin_users").select("email").eq("email",user.email).maybeSingle();if(error||!allowed){$("authMsg").textContent="This email is not approved as an admin yet. Run the admin approval SQL supplied with this website.";await db.auth.signOut();return;}$("loginPanel").classList.add("hidden");$("adminContent").classList.remove("hidden");await Promise.all([loadOrders(),loadAdminMenu()]);db.channel("cafe-orders").on("postgres_changes",{event:"*",schema:"public",table:"orders"},()=>loadOrders()).subscribe(s=>{$("liveState").textContent=s==="SUBSCRIBED"?"Live updates on":"Connecting…";});}
+async function loadOrders(){const {data,error}=await db.from("orders").select("*,order_items(*)").order("created_at",{ascending:false}).limit(100);if(error){$("orders").innerHTML="<p>"+safe(error.message)+"</p>";return;}currentOrders=data||[];$("orders").innerHTML=currentOrders.length?currentOrders.map(o=>`<article class="order"><div class="order-head"><b>Order #${o.id} · ${safe(o.customer_name)}</b><span class="pill">${safe(o.status)}</span></div><p class="muted">${new Date(o.created_at).toLocaleString()} · ${safe(o.phone)} · ${safe(o.order_type)} · ${safe(o.payment_method)}</p><p>${safe(o.address||"Takeaway")}</p>${(o.order_items||[]).map(i=>`<div>${safe(i.item_name)} × ${i.quantity} — ${money(i.price*i.quantity)}</div>`).join("")}<p><b>Total: ${money(o.total)}</b> (Delivery ${money(o.delivery_fee)})</p><select data-status="${o.id}">${["new","accepted","preparing","ready","completed","cancelled"].map(s=>`<option ${o.status===s?"selected":""}>${s}</option>`).join("")}</select> <button class="btn alt" data-bill="${o.id}">Print Bill</button> <button class="btn alt" data-kot="${o.id}">Print KOT</button></article>`).join(""):'<p class="muted">No orders yet.</p>';$("orders").querySelectorAll("[data-status]").forEach(s=>s.onchange=async()=>{const {error}=await db.from("orders").update({status:s.value}).eq("id",s.dataset.status);if(error)alert(error.message);});$("orders").querySelectorAll("[data-bill]").forEach(b=>b.onclick=()=>printOrder(Number(b.dataset.bill),false));$("orders").querySelectorAll("[data-kot]").forEach(b=>b.onclick=()=>printOrder(Number(b.dataset.kot),true));}
+async function loadAdminMenu(){const {data,error}=await db.from("menu_items").select("*").order("category").order("name");if(error){$("menuAdmin").innerHTML="<tr><td colspan=5>"+safe(error.message)+"</td></tr>";return;}$("menuAdmin").innerHTML=(data||[]).map(x=>`<tr><td><input data-name="${x.id}" value="${safe(x.name)}"></td><td><input data-cat="${x.id}" value="${safe(x.category||"")}"></td><td><input data-price="${x.id}" type="number" min="0" step=".01" value="${x.price}"></td><td><input data-avail="${x.id}" type="checkbox" ${x.available?"checked":""}></td><td><button class="btn alt" data-save="${x.id}">Save</button></td></tr>`).join("");$("menuAdmin").querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{let id=b.dataset.save;const {error}=await db.from("menu_items").update({name:$(`[data-name="${id}"]`).value,category:$(`[data-cat="${id}"]`).value,price:Number($(`[data-price="${id}"]`).value),available:$(`[data-avail="${id}"]`).checked}).eq("id",id);if(error)alert(error.message);else{alert("Menu item saved.");await loadMenu();}});}
+$("addItem").onsubmit=async e=>{e.preventDefault();const {error}=await db.from("menu_items").insert({name:$("newName").value.trim(),category:$("newCategory").value.trim(),price:Number($("newPrice").value),available:true});if(error)alert(error.message);else{e.target.reset();await loadAdminMenu();await loadMenu();}};
+document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{["ordersTab","menuTab"].forEach(id=>$(id).classList.toggle("hidden",id!==b.dataset.tab));});
+function printOrder(id,kot){const o=currentOrders.find(x=>x.id===id);if(!o)return;let lines=(o.order_items||[]).map(i=>`<tr><td>${safe(i.item_name)} × ${i.quantity}</td><td class="r">${kot?"":money(i.price*i.quantity)}</td></tr>`).join("");$("receipt").innerHTML=`<div class="receipt"><h2>THE LEELA CAFE</h2><p style="text-align:center">${kot?"KITCHEN ORDER TICKET":"CUSTOMER BILL"}</p><hr><p>Order: #${o.id}</p><p>${new Date(o.created_at).toLocaleString()}</p><p>Name: ${safe(o.customer_name)}</p><p>Phone: ${safe(o.phone)}</p><p>Type: ${safe(o.order_type)}</p><hr><table>${lines}</table><hr>${kot?"":`<p>Subtotal: ${money(o.subtotal)}</p><p>Delivery: ${money(o.delivery_fee)}</p><h3>Total: ${money(o.total)}</h3>`}<p style="text-align:center">Taste. Chill. Repeat.</p></div>`;$("receipt").classList.remove("hidden");window.print();$("receipt").classList.add("hidden");}
+db.auth.getSession().then(({data})=>{if(data.session)initAdmin();});
+loadMenu();
+</script>
+</body></html>
