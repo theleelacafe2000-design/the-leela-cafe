@@ -30,13 +30,34 @@ footer{text-align:center;color:var(--muted);padding:24px;font-size:12px}
   html,body{width:58mm!important;margin:0!important;padding:0!important;background:#fff!important}
   body *{visibility:hidden!important}
   #receipt,#receipt *{visibility:visible!important}
-  #receipt{display:block!important;position:absolute!important;left:0!important;top:0!important;width:58mm!important;margin:0!important;padding:2mm!important;background:#fff!important}
-  .receipt{width:100%!important;font:12px/1.35 monospace;color:#000}
-  .receipt h2{text-align:center;font-size:16px;margin:0 0 5px}
-  .receipt p{margin:3px 0}
-  .receipt table{width:100%;font:11px monospace;border-collapse:collapse}
-  .receipt td,.receipt th{padding:3px 0;border:0}
-  .receipt .r{text-align:right}
+  #receipt{display:block!important;position:absolute!important;left:0!important;top:0!important;width:58mm!important;margin:0!important;padding:2mm 2.2mm 3mm!important;background:#fff!important;color:#000!important}
+  .receipt{width:100%!important;font:9px/1.32 Arial,Helvetica,sans-serif;color:#000!important}
+  .receipt .brand{text-align:center;font:900 18px/1.05 Arial,sans-serif;letter-spacing:.45px;margin:0}
+  .receipt .tagline{text-align:center;font:700 7px/1.4 Arial,sans-serif;letter-spacing:1.5px;margin:3px 0 7px}
+  .receipt .brand-mark{text-align:center;font-size:8px;letter-spacing:2px;margin:0 0 4px}
+  .receipt .receipt-title{text-align:center;font-size:9px;font-weight:800;letter-spacing:1.6px;margin:5px 0;padding:4px 0;border-top:1px solid #000;border-bottom:1px solid #000}
+  .receipt .meta{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;margin:3px 0}
+  .receipt .meta span:last-child{text-align:right}
+  .receipt .section-label{font-size:7px;font-weight:800;letter-spacing:1.2px;margin:7px 0 3px}
+  .receipt .customer{margin:4px 0 6px}
+  .receipt .customer div{margin:2px 0;overflow-wrap:anywhere}
+  .receipt .rule{border:0;border-top:1px dashed #000;margin:6px 0}
+  .receipt table{width:100%;border-collapse:collapse;table-layout:fixed;font:8.5px/1.25 Arial,sans-serif}
+  .receipt th{font-size:7px;font-weight:800;letter-spacing:.5px;border-top:1px solid #000;border-bottom:1px solid #000;padding:5px 1px;text-align:left}
+  .receipt td{padding:5px 1px;vertical-align:top;border-bottom:1px dotted #888;overflow-wrap:anywhere}
+  .receipt .item-name{width:43%;text-align:left}
+  .receipt .qty{width:10%;text-align:center;white-space:nowrap}
+  .receipt .rate{width:20%;text-align:right;white-space:nowrap}
+  .receipt .amount{width:27%;text-align:right;white-space:nowrap}
+  .receipt .totals{margin:6px 0 4px}
+  .receipt .sumrow{display:flex;justify-content:space-between;gap:5px;margin:3px 0;font-size:9px}
+  .receipt .grand{font-size:13px;font-weight:900;padding:6px 0;margin:5px 0;border-top:1px solid #000;border-bottom:3px double #000}
+  .receipt .payment{display:flex;justify-content:space-between;gap:5px;margin:5px 0;font-size:8px}
+  .receipt .thanks{text-align:center;font-size:10px;font-weight:900;letter-spacing:.6px;margin:9px 0 2px}
+  .receipt .footer{text-align:center;font-size:7px;line-height:1.45;margin-top:3px}
+  .receipt .center{text-align:center}
+  .receipt .small{font-size:7px}
+  .receipt .badge{display:inline-block;border:1px solid #000;padding:2px 5px;font-size:7px;font-weight:800;letter-spacing:.7px}
 }
 </style>
 </head>
@@ -94,7 +115,52 @@ async function loadOrders(){const {data,error}=await db.from("orders").select("*
 async function loadAdminMenu(){const {data,error}=await db.from("menu_items").select("*").order("category").order("name");if(error){$("menuAdmin").innerHTML="<tr><td colspan=5>"+safe(error.message)+"</td></tr>";return;}$("menuAdmin").innerHTML=(data||[]).map(x=>`<tr><td><input data-name="${x.id}" value="${safe(x.name)}"></td><td><input data-cat="${x.id}" value="${safe(x.category||"")}"></td><td><input data-price="${x.id}" type="number" min="0" step=".01" value="${x.price}"></td><td><input data-avail="${x.id}" type="checkbox" ${x.available?"checked":""}></td><td><button class="btn alt" data-save="${x.id}">Save</button></td></tr>`).join("");$("menuAdmin").querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{let id=b.dataset.save;const {error}=await db.from("menu_items").update({name:$(`[data-name="${id}"]`).value,category:$(`[data-cat="${id}"]`).value,price:Number($(`[data-price="${id}"]`).value),available:$(`[data-avail="${id}"]`).checked}).eq("id",id);if(error)alert(error.message);else{alert("Menu item saved.");await loadMenu();}});}
 $("addItem").onsubmit=async e=>{e.preventDefault();const {error}=await db.from("menu_items").insert({name:$("newName").value.trim(),category:$("newCategory").value.trim(),price:Number($("newPrice").value),available:true});if(error)alert(error.message);else{e.target.reset();await loadAdminMenu();await loadMenu();}};
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{["ordersTab","menuTab"].forEach(id=>$(id).classList.toggle("hidden",id!==b.dataset.tab));});
-function printOrder(id,kot){const o=currentOrders.find(x=>x.id===id);if(!o)return;let lines=(o.order_items||[]).map(i=>`<tr><td>${safe(i.item_name)} × ${i.quantity}</td><td class="r">${kot?"":money(i.price*i.quantity)}</td></tr>`).join("");$("receipt").innerHTML=`<div class="receipt"><h2>THE LEELA CAFE</h2><p style="text-align:center">${kot?"KITCHEN ORDER TICKET":"CUSTOMER BILL"}</p><hr><p>Order: #${o.id}</p><p>${new Date(o.created_at).toLocaleString()}</p><p>Name: ${safe(o.customer_name)}</p><p>Phone: ${safe(o.phone)}</p><p>Type: ${safe(o.order_type)}</p><hr><table>${lines}</table><hr>${kot?"":`<p>Subtotal: ${money(o.subtotal)}</p><p>Delivery: ${money(o.delivery_fee)}</p><h3>Total: ${money(o.total)}</h3>`}<p style="text-align:center">Taste. Chill. Repeat.</p></div>`;$("receipt").classList.remove("hidden");window.print();$("receipt").classList.add("hidden");}
+function printOrder(id,kot){
+  const o=currentOrders.find(x=>x.id===id);if(!o)return;
+  const items=o.order_items||[];
+  const lines=items.map(i=>{
+    const qty=Number(i.quantity||0), rate=Number(i.price||0), amount=rate*qty;
+    return `<tr><td class="item-name">${safe(i.item_name)}</td><td class="qty">${qty}</td><td class="rate">${kot?"":money(rate)}</td><td class="amount">${kot?"":money(amount)}</td></tr>`;
+  }).join("");
+  const dt=new Date(o.created_at);
+  const date=dt.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+  const time=dt.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+  const isTakeaway=String(o.order_type||"").toLowerCase()==="takeaway";
+  const orderType=isTakeaway?"TAKEAWAY":"HOME DELIVERY";
+  const title=kot?"KITCHEN TICKET":"TAX INVOICE";
+  const payment=String(o.payment_method||"Cash").toUpperCase();
+  $("receipt").innerHTML=`<div class="receipt">
+    <div class="brand-mark">✦ &nbsp; EST. THE LEELA &nbsp; ✦</div>
+    <div class="brand">THE LEELA CAFE</div>
+    <div class="tagline">TASTE. CHILL. REPEAT.</div>
+    <div class="receipt-title">${title}</div>
+    <div class="meta"><span>ORDER NO.</span><b>#${safe(o.id)}</b></div>
+    <div class="meta"><span>DATE</span><b>${safe(date)} · ${safe(time)}</b></div>
+    <div class="meta"><span>ORDER TYPE</span><span class="badge">${safe(orderType)}</span></div>
+    <div class="section-label">CUSTOMER DETAILS</div>
+    <div class="customer">
+      <div><b>Name:</b> ${safe(o.customer_name||"-")}</div>
+      <div><b>Phone:</b> ${safe(o.phone||"-")}</div>
+      ${o.address?`<div><b>Address:</b> ${safe(o.address)}</div>`:""}
+    </div>
+    <div class="section-label">ORDER SUMMARY</div>
+    <table><thead><tr><th class="item-name">ITEM</th><th class="qty">QTY</th>${kot?"":'<th class="rate">RATE</th><th class="amount">AMOUNT</th>'}</tr></thead><tbody>${lines}</tbody></table>
+    ${kot?'<div class="receipt-title">PLEASE PREPARE</div>':`
+      <div class="totals">
+        <div class="sumrow"><span>Item Subtotal</span><b>${money(o.subtotal)}</b></div>
+        <div class="sumrow"><span>Delivery Charges</span><b>${Number(o.delivery_fee||0)===0?"FREE":money(o.delivery_fee)}</b></div>
+        <div class="sumrow grand"><span>NET PAYABLE</span><span>${money(o.total)}</span></div>
+      </div>
+      <div class="payment"><span>PAYMENT MODE</span><b>${safe(payment)}</b></div>
+    `}
+    <hr class="rule">
+    <div class="thanks">${kot?"KITCHEN COPY":"THANK YOU!"}</div>
+    <div class="footer">We appreciate your visit.<br/>Please visit us again.<br/><b>THE LEELA CAFE</b></div>
+  </div>`;
+  $("receipt").classList.remove("hidden");
+  window.print();
+  $("receipt").classList.add("hidden");
+}
 db.auth.getSession().then(({data})=>{if(data.session)initAdmin();});
 loadMenu();
 </script>
