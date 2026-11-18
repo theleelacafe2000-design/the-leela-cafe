@@ -28,10 +28,11 @@ footer{text-align:center;color:var(--muted);padding:24px;font-size:12px}
 .qr-card{border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;background:#fff;break-inside:avoid}.qr-card img{width:150px;height:150px;max-width:100%}.qr-card h3{margin:4px 0}.qr-url{font-size:10px;overflow-wrap:anywhere;color:var(--muted)}
 @media print{
   @page{size:58mm auto;margin:0}
-  html,body{width:58mm!important;margin:0!important;padding:0!important;background:#fff!important}
-  body *{visibility:hidden!important}
+  html,body{width:58mm!important;min-width:58mm!important;margin:0!important;padding:0!important;background:#fff!important}
+  /* Remove the customer/admin page from print flow; visibility:hidden alone leaves its full height and creates many blank pages. */
+  body> *:not(#receipt){display:none!important}
+  #receipt{display:block!important;position:static!important;left:auto!important;top:auto!important;width:58mm!important;min-height:0!important;height:auto!important;max-height:none!important;overflow:visible!important;margin:0!important;padding:2mm 2.2mm 3mm!important;background:#fff!important;color:#000!important;break-inside:avoid!important;page-break-inside:avoid!important}
   #receipt,#receipt *{visibility:visible!important}
-  #receipt{display:block!important;position:absolute!important;left:0!important;top:0!important;width:58mm!important;margin:0!important;padding:2mm 2.2mm 3mm!important;background:#fff!important;color:#000!important}
   .receipt{width:100%!important;font:9px/1.32 Arial,Helvetica,sans-serif;color:#000!important}
   .receipt .brand{text-align:center;font:900 18px/1.05 Arial,sans-serif;letter-spacing:.45px;margin:0}
   .receipt .tagline{text-align:center;font:700 7px/1.4 Arial,sans-serif;letter-spacing:1.5px;margin:3px 0 7px}
@@ -64,9 +65,11 @@ footer{text-align:center;color:var(--muted);padding:24px;font-size:12px}
 
 #newOrderToast{position:fixed;right:20px;top:20px;z-index:99999;background:#0e422b;color:#fff;padding:18px 22px;border-radius:14px;box-shadow:0 10px 35px #0004;max-width:340px;display:none;border:2px solid #b8e6c8}#newOrderToast strong{display:block;font-size:20px;letter-spacing:.5px;margin-bottom:5px}#newOrderToast span{font-size:14px}#newOrderToast button{float:right;background:#fff;color:#123b2a;border:0;border-radius:6px;padding:4px 9px;margin-left:12px;cursor:pointer}
 @media print{
- body.printing-qrs *{visibility:hidden!important}
+ body.printing-qrs> *:not(main){display:none!important}
+ body.printing-qrs main> *:not(#adminView){display:none!important}
+ body.printing-qrs #adminView> *:not(#qrTab){display:none!important}
  body.printing-qrs #qrTab,body.printing-qrs #qrTab *{visibility:visible!important}
- body.printing-qrs #qrTab{display:block!important;position:absolute;left:0;top:0;width:100%;border:0}
+ body.printing-qrs #qrTab{display:block!important;position:static!important;width:100%;border:0}
  body.printing-qrs #qrTab .menu-grid{grid-template-columns:repeat(2,1fr)}
  body.printing-qrs #printQrs{display:none!important}
 }
