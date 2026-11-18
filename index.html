@@ -61,6 +61,14 @@ footer{text-align:center;color:var(--muted);padding:24px;font-size:12px}
   .receipt .center{text-align:center}
   .receipt .small{font-size:7px}
   .receipt .badge{display:inline-block;border:1px solid #000;padding:2px 5px;font-size:7px;font-weight:800;letter-spacing:.7px}
+  .receipt .family{text-align:center;font-size:7px;letter-spacing:.5px;line-height:1.5;margin:7px 0}
+  .receipt .social-row{display:grid;grid-template-columns:1fr 1fr;text-align:center;gap:4px;font-size:6px;margin:5px 0}
+  .receipt .social-row>div+div{border-left:1px solid #000}
+  .receipt .qr-placeholder{border:1.5px solid #000;width:13mm;height:13mm;margin:2px auto;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900}
+  .receipt .social-note{text-align:center;font-size:6px;margin:3px 0}
+  .receipt .royal-offer{text-align:center;font-size:8px;line-height:1.45}
+  .receipt .closing-script{text-align:center;font-family:Georgia,serif;font-size:12px;font-style:italic;line-height:1.3;padding:3px 0}
+  .receipt .offer-note{text-align:center;font-size:6px}
 }
 
 #newOrderToast{position:fixed;right:20px;top:20px;z-index:99999;background:#0e422b;color:#fff;padding:18px 22px;border-radius:14px;box-shadow:0 10px 35px #0004;max-width:340px;display:none;border:2px solid #b8e6c8}#newOrderToast strong{display:block;font-size:20px;letter-spacing:.5px;margin-bottom:5px}#newOrderToast span{font-size:14px}#newOrderToast button{float:right;background:#fff;color:#123b2a;border:0;border-radius:6px;padding:4px 9px;margin-left:12px;cursor:pointer}
@@ -146,7 +154,7 @@ function renderTableQrs(){const base=location.origin+location.pathname;$("qrGrid
 $("printQrs").onclick=()=>{document.body.classList.add("printing-qrs");window.print();document.body.classList.remove("printing-qrs");};
 function setupTableMode(){if(!currentTable)return;$("tableNotice").classList.remove("hidden");$("tableNotice").textContent=`You are ordering from ${currentTable.label}. Your order will be sent directly to the cafe.`;$("normalNotice").classList.add("hidden");$("orderTypeLabel").classList.add("hidden");$("orderType").value="takeaway";$("addressWrap").classList.add("hidden");const h=document.querySelector("#customerView .hero h1");h.textContent=`Welcome to ${currentTable.label}`;$("placeOrder").textContent="Send Order to Kitchen";}
 
-function printOrder(id,kot){
+async function printOrder(id,kot){
   const o=currentOrders.find(x=>x.id===id);if(!o)return;
   const items=o.order_items||[];
   const lines=items.map(i=>{
@@ -187,10 +195,29 @@ function printOrder(id,kot){
       <div class="payment"><span>PAYMENT MODE</span><b>${safe(payment)}</b></div>
     `}
     <hr class="rule">
-    <div class="thanks">${kot?"KITCHEN COPY":"THANK YOU!"}</div>
-    <div class="footer">We appreciate your visit.<br/>Please visit us again.<br/><b>THE LEELA CAFE</b></div>
+    <div class="thanks">${kot?"KITCHEN COPY":"Thank You! ♡"}</div>
+    <div class="footer">${kot?"PLEASE PREPARE":"FOR DINING WITH US"}</div>
+    ${kot?"":`
+      <div class="family">YOU'RE NOT JUST A CUSTOMER,<br>YOU'RE PART OF<br><b>THE LEELA CAFE FAMILY!</b></div>
+      <div class="social-row"><div><div class="qr-placeholder">IG</div><b>FOLLOW US ON<br>INSTAGRAM</b></div><div><div class="qr-placeholder">G</div><b>REVIEW US ON<br>GOOGLE</b></div></div>
+      <div class="social-note">Scan our social QR codes</div>
+      <hr class="rule">
+      <div class="royal-offer">✦ BRING THIS BILL &amp; GET<br><b>5% OFF ON YOUR NEXT VISIT!*</b></div>
+      <hr class="rule">
+      <div class="closing-script">Calories Don't Count<br>When You're Happy! ☺</div>
+      <div class="offer-note">*Offer subject to cafe terms.</div>
+    `}
   </div>`;
   $("receipt").classList.remove("hidden");
+  // Wait for the embedded cafe logo to finish decoding before opening print preview.
+  const logo = $("receipt").querySelector(".receipt-logo");
+  if (logo) {
+    try {
+      if (logo.decode) await logo.decode();
+      else if (!logo.complete) await new Promise(resolve => { logo.onload = resolve; logo.onerror = resolve; });
+    } catch (e) { /* Continue printing the bill even if the logo cannot be decoded. */ }
+  }
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   window.print();
   $("receipt").classList.add("hidden");
 }
